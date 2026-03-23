@@ -178,6 +178,66 @@
   box-shadow: 0 0 16px var(--accent-glow);
 }
 
+/* Market Banner */
+.market-banner {
+  padding: 1rem 1.5rem;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-size: 0.95rem;
+  margin-bottom: 1rem;
+}
+
+.market-banner.danger {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #fca5a5;
+}
+
+.action-summary-container {
+  padding: 0.45rem 1.25rem;
+  margin-bottom: 0.75rem;
+  border-left: 3px solid var(--accent-color);
+  display: flex !important;
+  align-items: center;
+}
+
+@media (max-width: 768px) {
+  .action-summary-container {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px !important;
+  }
+  .action-summary-container > div:nth-child(2) {
+    display: none; /* 구분선 제거 */
+  }
+}
+
+/* Trade Log Table */
+.trade-log-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.trade-log-table th {
+  text-align: left;
+  padding: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  border-bottom: 1px solid var(--panel-border);
+}
+
+.trade-log-table td {
+  padding: 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.trade-log-table tr:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
 /* Mobile Responsiveness */
 @media (max-width: 768px) {
   .app-container {

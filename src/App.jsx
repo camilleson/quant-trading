@@ -5,6 +5,7 @@ import TradingChart from './components/TradingChart';
 import { fetchRealData } from './api/realData';
 import { calculateRSI, generateRSISignals, calculateADX } from './strategies/rsi';
 import { generate3GSignals } from './strategies/breakout3g';
+import { calculateBacktestMetrics, getActionSummary } from './utils/backtest';
 
 const defaultConfigs = {
   LEVERAGE: { rsiBuy: 30, rsiSell: 70, shortMA: 5, longMA: 20 },
@@ -55,7 +56,6 @@ function App() {
     setMaLong(config.longMA);
   }, [assetType]);
 
-  // 종목 변경 시 처리
   useEffect(() => {
     loadData(symbol);
   }, [symbol]);
@@ -72,6 +72,10 @@ function App() {
     }
   }, [baseData, strategy, rsiPeriod, rsiOversold, rsiOverbought, maShort, maLong, adxThreshold, useMA200Filter]);
 
+  const backtest = useMemo(() => {
+    return calculateBacktestMetrics(chartData);
+  }, [chartData]);
+
   const latestData = chartData[chartData.length - 1] || {};
   const prevData = chartData[chartData.length - 2] || {};
 
@@ -82,6 +86,9 @@ function App() {
 
   const signals = chartData.filter(d => d.signalType).slice(-5).reverse();
   const latestSignal = signals.length > 0 ? signals[0].signalType : '대기(HOLD)';
+
+  const isBullMarket = latestData.ma200 ? latestData.close > latestData.ma200 : true;
+  const actionSummary = getActionSummary(latestData, strategy);
 
   return (
     <div className="app-container">
@@ -107,10 +114,39 @@ function App() {
 
       <main className="dashboard-grid">
         <div className="main-chart-area">
+          {/* 시장 상황 배너 */}
+          {!isBullMarket && (
+            <div className="market-banner danger">
+              <Activity size={20} />
+              <span>⚠️ <strong>시장 경고:</strong> 현재 지수가 200일 이평선 아래에 있습니다. 공격적인 매수보다는 보수적인 관망을 추천합니다.</span>
+            </div>
+          )}
+
+          <div className="action-summary-container glass-panel" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--accent-color)', flexShrink: 0 }}>
+              <Activity size={16} />
+              <strong style={{ fontSize: '0.85rem', whiteSpace: 'nowrap' }}>오늘의 투자 액션 요약</strong>
+            </div>
+            <div style={{ width: '1px', height: '14px', background: 'var(--panel-border)', flexShrink: 0 }} />
+            <p style={{ margin: 0, fontSize: '0.95rem', fontWeight: '500' }}>{actionSummary}</p>
+          </div>
+
           <div className="metrics-grid">
             <div className="glass-panel metric-card">
               <span className="metric-title">현재 가격</span>
               <span className="metric-value">${currentPrice.toFixed(2)}</span>
+            </div>
+            <div className="glass-panel metric-card">
+              <span className="metric-title">전략 총 수익률</span>
+              <span className={`metric-value ${backtest.totalReturn >= 0 ? 'text-success' : 'text-danger'}`}>
+                {backtest.totalReturn > 0 ? '+' : ''}{backtest.totalReturn.toFixed(2)}%
+              </span>
+            </div>
+            <div className="glass-panel metric-card">
+              <span className="metric-title">최대 낙폭 (MDD)</span>
+              <span className="metric-value text-danger">
+                -{backtest.mdd.toFixed(2)}%
+              </span>
             </div>
             <div className="glass-panel metric-card">
               <span className="metric-title">전일 대비</span>
@@ -146,6 +182,46 @@ function App() {
                 데이터가 없습니다.
               </div>
             )}
+          </div>
+
+          {/* 상세 거래 로그 */}
+          <div className="glass-panel" style={{ padding: '1.5rem', overflowX: 'auto' }}>
+            <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1.5rem' }}>
+              <Activity size={20} className="text-accent" />
+              상세 거래 내역 (Backtest Log)
+            </h3>
+            <table className="trade-log-table">
+              <thead>
+                <tr>
+                  <th>매수일</th>
+                  <th>매출일</th>
+                  <th>매수가</th>
+                  <th>매도가</th>
+                  <th>수익률</th>
+                </tr>
+              </thead>
+              <tbody>
+                {backtest.tradeLog.length === 0 ? (
+                  <tr>
+                    <td colSpan="5" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
+                      해당 기간 내 체결된 거래가 없습니다.
+                    </td>
+                  </tr>
+                ) : (
+                  backtest.tradeLog.map((trade, idx) => (
+                    <tr key={idx}>
+                      <td>{trade.entryDate}</td>
+                      <td>{trade.exitDate}</td>
+                      <td>${trade.entryPrice.toFixed(2)}</td>
+                      <td>${trade.exitPrice.toFixed(2)}</td>
+                      <td className={trade.profitPct >= 0 ? 'text-success' : 'text-danger'}>
+                        {trade.profitPct > 0 ? '+' : ''}{trade.profitPct.toFixed(2)}%
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
 
