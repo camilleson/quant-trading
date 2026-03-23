@@ -184,45 +184,6 @@ function App() {
             )}
           </div>
 
-          {/* 상세 거래 로그 */}
-          <div className="glass-panel" style={{ padding: '1.5rem', overflowX: 'auto' }}>
-            <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1.5rem' }}>
-              <Activity size={20} className="text-accent" />
-              상세 거래 내역 (Backtest Log)
-            </h3>
-            <table className="trade-log-table">
-              <thead>
-                <tr>
-                  <th>매수일</th>
-                  <th>매출일</th>
-                  <th>매수가</th>
-                  <th>매도가</th>
-                  <th>수익률</th>
-                </tr>
-              </thead>
-              <tbody>
-                {backtest.tradeLog.length === 0 ? (
-                  <tr>
-                    <td colSpan="5" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
-                      해당 기간 내 체결된 거래가 없습니다.
-                    </td>
-                  </tr>
-                ) : (
-                  backtest.tradeLog.map((trade, idx) => (
-                    <tr key={idx}>
-                      <td>{trade.entryDate}</td>
-                      <td>{trade.exitDate}</td>
-                      <td>${trade.entryPrice.toFixed(2)}</td>
-                      <td>${trade.exitPrice.toFixed(2)}</td>
-                      <td className={trade.profitPct >= 0 ? 'text-success' : 'text-danger'}>
-                        {trade.profitPct > 0 ? '+' : ''}{trade.profitPct.toFixed(2)}%
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
         </div>
 
         <aside className="sidebar">
