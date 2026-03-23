@@ -95,7 +95,7 @@ function App() {
       <header className="header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div className="header-title">
           <TrendingUp size={32} className="text-accent" />
-          <h1>퀀트대시 넥스트</h1>
+          <h1>Son's Quant Dash </h1>
         </div>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
           <input
@@ -253,8 +253,8 @@ function App() {
                 <div className="info-box">
                   <span className="info-text">
                     <span className="info-label">{strategy === 'RSI' ? 'RSI 역추세:' : '3G 돌파:'}</span>
-                    {strategy === 'RSI' 
-                      ? '과매수/과매도 구간에서 반등을 노리는 전략입니다.' 
+                    {strategy === 'RSI'
+                      ? '과매수/과매도 구간에서 반등을 노리는 전략입니다.'
                       : '단기 이동평균선이 장기를 돌파할 때 추세를 따라가는 전략입니다.'}
                   </span>
                 </div>
@@ -298,9 +298,9 @@ function App() {
                   </div>
                   <div className="control-group" style={{ marginTop: '10px', borderTop: '1px solid var(--panel-border)', paddingTop: '15px' }}>
                     <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-                      <input 
-                        type="checkbox" 
-                        checked={useMA200Filter} 
+                      <input
+                        type="checkbox"
+                        checked={useMA200Filter}
                         onChange={(e) => setUseMA200Filter(e.target.checked)}
                         style={{ width: '18px', height: '18px' }}
                       />
