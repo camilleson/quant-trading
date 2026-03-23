@@ -205,21 +205,25 @@
 
 @media (max-width: 768px) {
   .action-summary-container {
-    padding: 4px 10px !important;
-    margin-bottom: 8px !important;
-    gap: 6px !important;
-    flex-wrap: wrap !important; /* 가로가 넘어가면 자동 줄바꿈 */
+    padding: 1px 1px !important;
+    margin-bottom: 1px !important;
+    gap: px !important;
+
+    /* 가로가 넘어가면 자동 줄바꿈 */
     width: 100% !important;
     max-width: 100vw !important;
-    min-height: 0 !important;
+    min-height: 10px !important;
   }
+
   .action-summary-container strong {
     display: none;
   }
+
   .action-summary-container p {
     font-size: 0.82rem !important;
     line-height: 1.3 !important;
-    word-break: keep-all; /* 가독성을 위한 줄바꿈 설정 */
+    word-break: keep-all;
+    /* 가독성을 위한 줄바꿈 설정 */
   }
 }
 
@@ -265,12 +269,12 @@
     justify-content: flex-start;
   }
 
-  .header > div:last-child {
+  .header>div:last-child {
     width: 100%;
     justify-content: stretch;
   }
-  
-  .header > div:last-child input {
+
+  .header>div:last-child input {
     flex: 1;
     min-width: 0;
   }
@@ -292,7 +296,7 @@
     font-size: 1.1rem;
   }
 
-  .main-chart-area > .glass-panel {
+  .main-chart-area>.glass-panel {
     height: 350px !important;
     padding: 0.75rem !important;
   }
@@ -306,8 +310,8 @@
   .metrics-grid {
     grid-template-columns: 1fr;
   }
-  
-  .main-chart-area > .glass-panel {
+
+  .main-chart-area>.glass-panel {
     height: 300px !important;
   }
 }
