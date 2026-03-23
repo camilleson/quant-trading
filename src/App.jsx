@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Activity, Settings, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import './App.css';
 import TradingChart from './components/TradingChart';
-import { generateDailyData } from './api/mockData';
+import { fetchRealData } from './api/realData';
 import { calculateRSI, generateRSISignals } from './strategies/rsi';
 import { generate3GSignals } from './strategies/breakout3g';
 
@@ -18,12 +18,29 @@ function App() {
   const [maShort, setMaShort] = useState(5);
   const [maLong, setMaLong] = useState(20);
 
+  const [symbol, setSymbol] = useState('TQQQ');
+  const [inputSymbol, setInputSymbol] = useState('TQQQ');
   const [baseData, setBaseData] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const loadData = async (ticker) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const data = await fetchRealData(ticker);
+      setBaseData(data);
+    } catch (err) {
+      setError(err.message);
+      setBaseData([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    // Load initial mock data once on mount
-    setBaseData(generateDailyData());
-  }, []);
+    loadData(symbol);
+  }, [symbol]);
 
   const chartData = useMemo(() => {
     if (baseData.length === 0) return [];
@@ -49,14 +66,24 @@ function App() {
 
   return (
     <div className="app-container">
-      <header className="header">
+      <header className="header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div className="header-title">
           <TrendingUp size={32} className="text-accent" />
           <h1>QuantDash Next</h1>
         </div>
-        <button className="btn" onClick={() => setBaseData(generateDailyData())}>
-          Regenerate Data
-        </button>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <input 
+            type="text" 
+            value={inputSymbol} 
+            onChange={(e) => setInputSymbol(e.target.value.toUpperCase())}
+            onKeyDown={(e) => e.key === 'Enter' && setSymbol(inputSymbol)}
+            placeholder="Symbol (e.g. TQQQ)"
+            style={{ padding: '8px 12px', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'rgba(255,255,255,0.1)', color: 'white' }}
+          />
+          <button className="btn" onClick={() => setSymbol(inputSymbol)} disabled={isLoading}>
+            {isLoading ? 'Loading...' : 'Load Data'}
+          </button>
+        </div>
       </header>
 
       <main className="dashboard-grid">
@@ -84,12 +111,20 @@ function App() {
             </div>
           </div>
 
-          <div className="glass-panel" style={{ padding: '1.5rem', height: '500px' }}>
-            {chartData.length > 0 ? (
+          <div className="glass-panel" style={{ padding: '1.5rem', height: '500px', position: 'relative' }}>
+            {isLoading ? (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-muted)' }}>
+                Fetching real market data for {symbol}...
+              </div>
+            ) : error ? (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--danger-color)' }}>
+                {error}
+              </div>
+            ) : chartData.length > 0 ? (
               <TradingChart data={chartData} />
             ) : (
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-muted)' }}>
-                Loading chart...
+                No data available
               </div>
             )}
           </div>
