@@ -1,9 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Activity, Settings, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { Activity, Settings, TrendingUp, TrendingDown, Minus, Info } from 'lucide-react';
 import './App.css';
 import TradingChart from './components/TradingChart';
 import { fetchRealData } from './api/realData';
-import { calculateRSI, generateRSISignals } from './strategies/rsi';
+import { calculateRSI, generateRSISignals, calculateADX } from './strategies/rsi';
 import { generate3GSignals } from './strategies/breakout3g';
 
 const defaultConfigs = {
@@ -15,14 +15,16 @@ function App() {
   const [strategy, setStrategy] = useState('RSI');
   const [assetType, setAssetType] = useState('LEVERAGE');
 
-  // RSI Settings
+  // RSI 설정
   const [rsiPeriod, setRsiPeriod] = useState(14);
   const [rsiOversold, setRsiOversold] = useState(30);
   const [rsiOverbought, setRsiOverbought] = useState(70);
+  const [adxThreshold, setAdxThreshold] = useState(25); // ADX 필터 임계값
 
-  // 3G Settings
+  // 3G 설정
   const [maShort, setMaShort] = useState(5);
   const [maLong, setMaLong] = useState(20);
+  const [useMA200Filter, setUseMA200Filter] = useState(true); // 200일선 필터 여부
 
   const [symbol, setSymbol] = useState('TQQQ');
   const [inputSymbol, setInputSymbol] = useState('TQQQ');
@@ -44,7 +46,7 @@ function App() {
     }
   };
 
-  // 사용자가 일반/레버리지 드롭다운을 변경할 때 설정값 업데이트
+  // 자산 타입 변경 시 처리
   useEffect(() => {
     const config = defaultConfigs[assetType];
     setRsiOversold(config.rsiBuy);
@@ -53,7 +55,7 @@ function App() {
     setMaLong(config.longMA);
   }, [assetType]);
 
-  // 검색 종목이 변경되었을 때는 데이터만 새로고침 (설정값은 유지)
+  // 종목 변경 시 처리
   useEffect(() => {
     loadData(symbol);
   }, [symbol]);
@@ -63,11 +65,12 @@ function App() {
 
     if (strategy === 'RSI') {
       const withRSI = calculateRSI(baseData, rsiPeriod);
-      return generateRSISignals(withRSI, rsiOversold, rsiOverbought);
+      const withADX = calculateADX(withRSI, 14);
+      return generateRSISignals(withADX, rsiOversold, rsiOverbought, adxThreshold);
     } else {
-      return generate3GSignals(baseData, maShort, maLong);
+      return generate3GSignals(baseData, maShort, maLong, useMA200Filter);
     }
-  }, [baseData, strategy, rsiPeriod, rsiOversold, rsiOverbought, maShort, maLong]);
+  }, [baseData, strategy, rsiPeriod, rsiOversold, rsiOverbought, maShort, maLong, adxThreshold, useMA200Filter]);
 
   const latestData = chartData[chartData.length - 1] || {};
   const prevData = chartData[chartData.length - 2] || {};
@@ -78,14 +81,14 @@ function App() {
   const isPositive = changePct >= 0;
 
   const signals = chartData.filter(d => d.signalType).slice(-5).reverse();
-  const latestSignal = signals.length > 0 ? signals[0].signalType : 'HOLD';
+  const latestSignal = signals.length > 0 ? signals[0].signalType : '대기(HOLD)';
 
   return (
     <div className="app-container">
       <header className="header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div className="header-title">
           <TrendingUp size={32} className="text-accent" />
-          <h1>QuantDash Next</h1>
+          <h1>퀀트대시 넥스트</h1>
         </div>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
           <input
@@ -93,11 +96,11 @@ function App() {
             value={inputSymbol}
             onChange={(e) => setInputSymbol(e.target.value.toUpperCase())}
             onKeyDown={(e) => e.key === 'Enter' && setSymbol(inputSymbol)}
-            placeholder="Symbol (e.g. TQQQ)"
+            placeholder="티커 입력 (예: TQQQ)"
             style={{ padding: '8px 12px', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'rgba(255,255,255,0.1)', color: 'white' }}
           />
           <button className="btn" onClick={() => setSymbol(inputSymbol)} disabled={isLoading}>
-            {isLoading ? 'Loading...' : 'Load Data'}
+            {isLoading ? '로딩 중...' : '데이터 불러오기'}
           </button>
         </div>
       </header>
@@ -106,23 +109,23 @@ function App() {
         <div className="main-chart-area">
           <div className="metrics-grid">
             <div className="glass-panel metric-card">
-              <span className="metric-title">Current Price</span>
+              <span className="metric-title">현재 가격</span>
               <span className="metric-value">${currentPrice.toFixed(2)}</span>
             </div>
             <div className="glass-panel metric-card">
-              <span className="metric-title">24h Change</span>
+              <span className="metric-title">전일 대비</span>
               <span className={`metric-value ${isPositive ? 'text-success' : 'text-danger'}`} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                 {isPositive ? <TrendingUp size={24} /> : <TrendingDown size={24} />}
                 {changePct > 0 ? '+' : ''}{changePct.toFixed(2)}%
               </span>
             </div>
             <div className="glass-panel metric-card">
-              <span className="metric-title">Current Signal</span>
+              <span className="metric-title">현재 시그널</span>
               <span className={`metric-value ${latestSignal === 'BUY' ? 'text-success' : latestSignal === 'SELL' ? 'text-danger' : 'text-muted'}`} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                 {latestSignal === 'BUY' && <TrendingUp size={24} />}
                 {latestSignal === 'SELL' && <TrendingDown size={24} />}
-                {latestSignal === 'HOLD' && <Minus size={24} />}
-                {latestSignal}
+                {latestSignal === '대기(HOLD)' && <Minus size={24} />}
+                {latestSignal === 'BUY' ? '매수' : latestSignal === 'SELL' ? '매도' : latestSignal}
               </span>
             </div>
           </div>
@@ -130,7 +133,7 @@ function App() {
           <div className="glass-panel" style={{ padding: '1.5rem', height: '500px', position: 'relative' }}>
             {isLoading ? (
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-muted)' }}>
-                Fetching real market data for {symbol}...
+                {symbol}의 실시간 시장 데이터를 가져오는 중...
               </div>
             ) : error ? (
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--danger-color)' }}>
@@ -140,7 +143,7 @@ function App() {
               <TradingChart data={chartData} />
             ) : (
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-muted)' }}>
-                No data available
+                데이터가 없습니다.
               </div>
             )}
           </div>
@@ -150,39 +153,59 @@ function App() {
           <div className="glass-panel strategy-panel">
             <h2 className="strategy-title">
               <Settings size={20} />
-              Strategy Config
+              전략 설정
             </h2>
 
             <div className="strategy-controls">
               <div className="control-group">
-                <label>Asset Type</label>
+                <label>자산 유형</label>
                 <select value={assetType} onChange={(e) => setAssetType(e.target.value)}>
-                  <option value="COMMON">Common (General)</option>
-                  <option value="LEVERAGE">Leverage ETF</option>
+                  <option value="COMMON">일반 주식 (1배수)</option>
+                  <option value="LEVERAGE">레버리지 ETF (3배수)</option>
                 </select>
               </div>
 
               <div className="control-group">
-                <label>Active Strategy</label>
+                <label>활성 전략</label>
                 <select value={strategy} onChange={(e) => setStrategy(e.target.value)}>
-                  <option value="RSI">RSI Reversion</option>
-                  <option value="3G">MA Breakout (3G)</option>
+                  <option value="RSI">RSI 역추세</option>
+                  <option value="3G">3G 이평선 돌파</option>
                 </select>
+              </div>
+
+              <div className="strategy-info">
+                <div className="info-box">
+                  <span className="info-text">
+                    <span className="info-label">{strategy === 'RSI' ? 'RSI 역추세:' : '3G 돌파:'}</span>
+                    {strategy === 'RSI' 
+                      ? '과매수/과매도 구간에서 반등을 노리는 전략입니다.' 
+                      : '단기 이동평균선이 장기를 돌파할 때 추세를 따라가는 전략입니다.'}
+                  </span>
+                </div>
               </div>
 
               {strategy === 'RSI' && (
                 <>
                   <div className="control-group">
-                    <label>RSI Period: {rsiPeriod}</label>
+                    <label>RSI 기간: {rsiPeriod}</label>
                     <input type="range" min="7" max="21" value={rsiPeriod} onChange={(e) => setRsiPeriod(Number(e.target.value))} />
                   </div>
                   <div className="control-group">
-                    <label>Oversold (Buy): {rsiOversold}</label>
+                    <label>과매도 (매수): {rsiOversold}</label>
                     <input type="range" min="10" max="40" value={rsiOversold} onChange={(e) => setRsiOversold(Number(e.target.value))} />
                   </div>
                   <div className="control-group">
-                    <label>Overbought (Sell): {rsiOverbought}</label>
+                    <label>과매수 (매도): {rsiOverbought}</label>
                     <input type="range" min="60" max="90" value={rsiOverbought} onChange={(e) => setRsiOverbought(Number(e.target.value))} />
+                  </div>
+                  <div className="control-group" style={{ marginTop: '10px', borderTop: '1px solid var(--panel-border)', paddingTop: '15px' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '5px', color: 'var(--accent-color)', fontWeight: 'bold' }}>
+                      <Activity size={16} /> ADX 추세 필터: {adxThreshold === 0 ? '꺼짐' : adxThreshold}
+                    </label>
+                    <input type="range" min="0" max="50" value={adxThreshold} onChange={(e) => setAdxThreshold(Number(e.target.value))} />
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                      ADX가 높을 때만 진입합니다. (25 이상 권장)
+                    </span>
                   </div>
                 </>
               )}
@@ -190,12 +213,26 @@ function App() {
               {strategy === '3G' && (
                 <>
                   <div className="control-group">
-                    <label>Short MA: {maShort}</label>
+                    <label>단기 이평선: {maShort}</label>
                     <input type="range" min="3" max="20" value={maShort} onChange={(e) => setMaShort(Number(e.target.value))} />
                   </div>
                   <div className="control-group">
-                    <label>Long MA: {maLong}</label>
+                    <label>장기 이평선: {maLong}</label>
                     <input type="range" min="10" max="60" value={maLong} onChange={(e) => setMaLong(Number(e.target.value))} />
+                  </div>
+                  <div className="control-group" style={{ marginTop: '10px', borderTop: '1px solid var(--panel-border)', paddingTop: '15px' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                      <input 
+                        type="checkbox" 
+                        checked={useMA200Filter} 
+                        onChange={(e) => setUseMA200Filter(e.target.checked)}
+                        style={{ width: '18px', height: '18px' }}
+                      />
+                      <span style={{ color: 'var(--accent-color)', fontWeight: 'bold' }}>200일 이평선 필터</span>
+                    </label>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginLeft: '26px' }}>
+                      가격이 200일선 위에 있을 때만(상승장) 매수합니다.
+                    </span>
                   </div>
                 </>
               )}
@@ -205,11 +242,11 @@ function App() {
           <div className="glass-panel strategy-panel">
             <h2 className="strategy-title">
               <Activity size={20} />
-              Recent Signals
+              최근 시그널
             </h2>
             <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               {signals.length === 0 && (
-                <div style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>No signals yet</div>
+                <div style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>아직 시그널이 없습니다.</div>
               )}
               {signals.map((sig, idx) => (
                 <div key={idx} style={{
@@ -222,7 +259,7 @@ function App() {
                 }}>
                   <div>
                     <div style={{ fontWeight: '600', color: sig.signalType === 'BUY' ? 'var(--success-color)' : 'var(--danger-color)' }}>
-                      {sig.signalType}
+                      {sig.signalType === 'BUY' ? '매수 (BUY)' : '매도 (SELL)'}
                     </div>
                     <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{sig.date}</div>
                   </div>
@@ -240,3 +277,4 @@ function App() {
 }
 
 export default App;
+
