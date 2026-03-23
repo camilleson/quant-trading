@@ -6,9 +6,15 @@ import { fetchRealData } from './api/realData';
 import { calculateRSI, generateRSISignals } from './strategies/rsi';
 import { generate3GSignals } from './strategies/breakout3g';
 
+const defaultConfigs = {
+  LEVERAGE: { rsiBuy: 30, rsiSell: 70, shortMA: 5, longMA: 20 },
+  COMMON: { rsiBuy: 40, rsiSell: 65, shortMA: 20, longMA: 60 }
+};
+
 function App() {
   const [strategy, setStrategy] = useState('RSI');
-  
+  const [assetType, setAssetType] = useState('LEVERAGE');
+
   // RSI Settings
   const [rsiPeriod, setRsiPeriod] = useState(14);
   const [rsiOversold, setRsiOversold] = useState(30);
@@ -38,13 +44,23 @@ function App() {
     }
   };
 
+  // 사용자가 일반/레버리지 드롭다운을 변경할 때 설정값 업데이트
+  useEffect(() => {
+    const config = defaultConfigs[assetType];
+    setRsiOversold(config.rsiBuy);
+    setRsiOverbought(config.rsiSell);
+    setMaShort(config.shortMA);
+    setMaLong(config.longMA);
+  }, [assetType]);
+
+  // 검색 종목이 변경되었을 때는 데이터만 새로고침 (설정값은 유지)
   useEffect(() => {
     loadData(symbol);
   }, [symbol]);
 
   const chartData = useMemo(() => {
     if (baseData.length === 0) return [];
-    
+
     if (strategy === 'RSI') {
       const withRSI = calculateRSI(baseData, rsiPeriod);
       return generateRSISignals(withRSI, rsiOversold, rsiOverbought);
@@ -55,7 +71,7 @@ function App() {
 
   const latestData = chartData[chartData.length - 1] || {};
   const prevData = chartData[chartData.length - 2] || {};
-  
+
   const currentPrice = latestData.close || 0;
   const prevPrice = prevData.close || 0;
   const changePct = prevPrice ? ((currentPrice - prevPrice) / prevPrice) * 100 : 0;
@@ -72,9 +88,9 @@ function App() {
           <h1>QuantDash Next</h1>
         </div>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-          <input 
-            type="text" 
-            value={inputSymbol} 
+          <input
+            type="text"
+            value={inputSymbol}
             onChange={(e) => setInputSymbol(e.target.value.toUpperCase())}
             onKeyDown={(e) => e.key === 'Enter' && setSymbol(inputSymbol)}
             placeholder="Symbol (e.g. TQQQ)"
@@ -136,8 +152,16 @@ function App() {
               <Settings size={20} />
               Strategy Config
             </h2>
-            
+
             <div className="strategy-controls">
+              <div className="control-group">
+                <label>Asset Type</label>
+                <select value={assetType} onChange={(e) => setAssetType(e.target.value)}>
+                  <option value="COMMON">Common (General)</option>
+                  <option value="LEVERAGE">Leverage ETF</option>
+                </select>
+              </div>
+
               <div className="control-group">
                 <label>Active Strategy</label>
                 <select value={strategy} onChange={(e) => setStrategy(e.target.value)}>
@@ -177,7 +201,7 @@ function App() {
               )}
             </div>
           </div>
-          
+
           <div className="glass-panel strategy-panel">
             <h2 className="strategy-title">
               <Activity size={20} />
@@ -188,8 +212,8 @@ function App() {
                 <div style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>No signals yet</div>
               )}
               {signals.map((sig, idx) => (
-                <div key={idx} style={{ 
-                  display: 'flex', 
+                <div key={idx} style={{
+                  display: 'flex',
                   justifyContent: 'space-between',
                   padding: '0.75rem',
                   background: 'rgba(0,0,0,0.2)',
