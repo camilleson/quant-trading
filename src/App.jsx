@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Activity, Settings, TrendingUp, TrendingDown, Minus, Info } from 'lucide-react';
 import './App.css';
 import TradingChart from './components/TradingChart';
+import { AdvancedRealTimeChart } from "react-ts-tradingview-widgets";
 import { fetchRealData } from './api/realData';
 import { calculateRSI, generateRSISignals, calculateADX } from './strategies/rsi';
 import { generate3GSignals } from './strategies/breakout3g';
@@ -15,12 +16,13 @@ const defaultConfigs = {
 function App() {
   const [strategy, setStrategy] = useState('RSI');
   const [assetType, setAssetType] = useState('LEVERAGE');
+  const [chartMode, setChartMode] = useState('BACKTEST'); // 'REALTIME' or 'BACKTEST'
 
   // RSI 설정
   const [rsiPeriod, setRsiPeriod] = useState(14);
   const [rsiOversold, setRsiOversold] = useState(30);
   const [rsiOverbought, setRsiOverbought] = useState(70);
-  const [adxThreshold, setAdxThreshold] = useState(25); // ADX 필터 임계값
+  const [adxThreshold, setAdxThreshold] = useState(0); // ADX 필터 기본 끄기 (시그널을 더 자주 보기 위해)
 
   // 3G 설정
   const [maShort, setMaShort] = useState(5);
@@ -166,8 +168,28 @@ function App() {
             </div>
           </div>
 
+          <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
+            <button
+              className="btn"
+              onClick={() => setChartMode('BACKTEST')}
+              style={{ flex: 1, fontWeight: 'bold', background: chartMode === 'BACKTEST' ? 'var(--accent-color)' : 'rgba(255,255,255,0.1)', color: chartMode === 'BACKTEST' ? '#fff' : 'var(--text-muted)' }}
+            >
+              분석 & 시그널 차트
+            </button>
+            <button
+              className="btn"
+              onClick={() => setChartMode('REALTIME')}
+              style={{ flex: 1, fontWeight: 'bold', background: chartMode === 'REALTIME' ? 'var(--accent-color)' : 'rgba(255,255,255,0.1)', color: chartMode === 'REALTIME' ? '#fff' : 'var(--text-muted)' }}
+            >
+              실시간 차트
+            </button>
+
+          </div>
+
           <div className="glass-panel" style={{ padding: '1.5rem', height: '500px', position: 'relative' }}>
-            {isLoading ? (
+            {chartMode === 'REALTIME' ? (
+              <AdvancedRealTimeChart symbol={symbol} theme="dark" autosize={true} hide_side_toolbar={false} allow_symbol_change={true} timezone="Asia/Seoul" />
+            ) : isLoading ? (
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-muted)' }}>
                 {symbol}의 실시간 시장 데이터를 가져오는 중...
               </div>
