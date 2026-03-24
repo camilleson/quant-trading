@@ -186,7 +186,7 @@ function App() {
 
           </div>
 
-          <div className="glass-panel" style={{ padding: '1.5rem', height: '500px', position: 'relative' }}>
+          <div className="glass-panel chart-container-panel" style={{ padding: '1.5rem', position: 'relative' }}>
             {chartMode === 'REALTIME' ? (
               <AdvancedRealTimeChart symbol={symbol} theme="dark" autosize={true} hide_side_toolbar={false} allow_symbol_change={true} timezone="Asia/Seoul" />
             ) : isLoading ? (

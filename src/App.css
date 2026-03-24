@@ -62,6 +62,11 @@
   gap: 1.5rem;
 }
 
+.chart-container-panel {
+  height: 600px;
+  min-height: 400px;
+}
+
 @media (max-width: 1024px) {
   .dashboard-grid {
     grid-template-columns: 1fr;
@@ -296,8 +301,8 @@
     font-size: 1.1rem;
   }
 
-  .main-chart-area>.glass-panel {
-    height: 350px !important;
+  .chart-container-panel {
+    height: 450px !important;
     padding: 0.75rem !important;
   }
 
@@ -311,7 +316,7 @@
     grid-template-columns: 1fr;
   }
 
-  .main-chart-area>.glass-panel {
-    height: 300px !important;
+  .chart-container-panel {
+    height: 400px !important;
   }
 }
